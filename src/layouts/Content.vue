@@ -27,8 +27,6 @@
           <v-spacer></v-spacer>
 
           <theme-switcher></theme-switcher>
-
-          <app-bar-user-menu></app-bar-user-menu>
         </div>
       </div>
     </v-app-bar>
@@ -56,13 +54,11 @@ import { ref } from '@vue/composition-api'
 import { mdiMagnify, mdiBellOutline, mdiGithub } from '@mdi/js'
 import VerticalNavMenu from './components/vertical-nav-menu/VerticalNavMenu.vue'
 import ThemeSwitcher from './components/ThemeSwitcher.vue'
-import AppBarUserMenu from './components/AppBarUserMenu.vue'
 
 export default {
   components: {
     VerticalNavMenu,
     ThemeSwitcher,
-    AppBarUserMenu,
   },
   setup() {
     const isDrawerOpen = ref(null)

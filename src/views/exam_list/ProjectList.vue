@@ -6,13 +6,135 @@
       :loading="isLoading"
       :sort-by="['id', 'name','status','dueDate']"
       class="elevation-1"
-      height="700"
+      dense
+      height="400"
       hide-default-footer
       item-key="id"
       loading-text="Loading... Please wait"
       multi-sort
       no-data-text="No data"
     >
+      <template v-slot:top>
+        <v-toolbar
+          flat
+        >
+          <v-toolbar-title>Projects list</v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-dialog
+            v-model="dialog"
+            max-width="500px"
+          >
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                class="mb-2"
+                color="primary"
+                dark
+                v-bind="attrs"
+                v-on="on"
+              >
+                New project
+              </v-btn>
+            </template>
+            <v-card>
+              <v-card-title>
+                <span class="text-h5">{{ formTitle }}</span>
+              </v-card-title>
+
+              <v-card-text>
+                <v-container>
+                  <v-row>
+                    <v-col
+                      cols="12"
+                      md="12"
+                      sm="6"
+                    >
+                      <v-text-field
+                        v-model="editedItem.name"
+                        label="Project name"
+                      ></v-text-field>
+                    </v-col>
+                  </v-row>
+                  <v-row>
+                    <v-col
+                      cols="12"
+                      md="12"
+                      sm="6"
+                    >
+                      <v-select
+                        v-model="editedItem.source"
+                        :items="languages"
+                        label="Source language"
+                      ></v-select>
+                    </v-col>
+                  </v-row>
+                  <v-row>
+                    <v-col
+                      cols="12"
+                      md="12"
+                      sm="6"
+                    >
+                      <v-select
+                        v-model="editedItem.target"
+                        :items="languages"
+                        chips
+                        filled
+                        label="Target language"
+                        multiple
+                      ></v-select>
+                    </v-col>
+                  </v-row>
+                </v-container>
+              </v-card-text>
+
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn
+                  color="blue darken-1"
+                  text
+                  @click="close"
+                >
+                  Cancel
+                </v-btn>
+                <v-btn
+                  color="blue darken-1"
+                  text
+                  @click="save"
+                >
+                  Save
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <v-dialog
+            v-model="dialogDelete"
+            max-width="500px"
+          >
+            <v-card>
+              <v-card-title class="text-h5">
+                Are you sure you want to delete this item?
+              </v-card-title>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn
+                  color="blue darken-1"
+                  text
+                  @click="closeDelete"
+                >
+                  Cancel
+                </v-btn>
+                <v-btn
+                  color="blue darken-1"
+                  text
+                  @click="deleteItemConfirm"
+                >
+                  OK
+                </v-btn>
+                <v-spacer></v-spacer>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+        </v-toolbar>
+      </template>
       <!--    <template v-slot:top>-->
       <!--      <v-text-field-->
       <!--        v-model="search"-->
@@ -36,9 +158,44 @@
         </v-icon>
       </template>
       <template v-slot:footer>
-        <v-row></v-row>
-        <v-row></v-row>
-        <v-row></v-row>
+        <div
+          class="d-flex flex-column d-inline-flex"
+          style="width: 100%"
+        >
+          <v-row v-if="projects !== undefined">
+            <v-col
+              cols="12"
+              md="4"
+              sm="6"
+            >
+              <v-list
+                dense
+              >
+                <v-subheader>Status</v-subheader>
+                <v-list-item
+                  v-for="(item, i) in Object.entries(countStatus())"
+                  :key="i"
+                >
+                  <v-list-item-content> {{ item[0] }}: {{ item[1] }}</v-list-item-content>
+                </v-list-item>
+              </v-list>
+            </v-col>
+            <v-col
+              cols="12"
+              md="4"
+              sm="6"
+            >
+              {{ countSourceLanguage() }}
+            </v-col>
+            <v-col
+              cols="12"
+              md="4"
+              sm="6"
+            >
+              aa
+            </v-col>
+          </v-row>
+        </div>
       </template>
     </v-data-table>
   </v-card>
@@ -62,17 +219,29 @@ async function getProjects() {
     withCredentials: false,
     credentials: 'same-origin',
   })
-  // eslint-disable-next-line no-underscore-dangle
-  console.log(response.data._embedded.projects)
 
   // eslint-disable-next-line no-underscore-dangle
   return response.data._embedded.projects
 }
 
 export default {
+  data: () => ({
+    isEdit: false,
+    dialog: false,
+    dialogDelete: false,
+    languages: ['cs', 'en', 'de', 'fi', 'zh', 'ru', 'hu', 'ja', 'ko', 'la'],
+    editedItem: {
+      name: '',
+      sourceLanguage: [],
+      targetLanguage: [],
+    },
+    defaultItem: {
+      name: '',
+      sourceLanguage: [],
+      targetLanguage: [],
+    },
+  }),
   setup() {
-    // const fetcher = () => fetch(URL).then(res => res.json())
-
     const {
       isLoading,
       isError,
@@ -82,21 +251,25 @@ export default {
       'projects',
       getProjects,
     )
-    console.log(projects)
 
     return {
       isLoading,
       isError,
       projects,
       error,
+
       icons: {
         mdiDelete,
         mdiPencil,
       },
+
     }
   },
   computed: {
 
+    formTitle() {
+      return this.isEdit ? 'Edit Item' : 'New Item'
+    },
     headers() {
       return [
         {
@@ -125,9 +298,13 @@ export default {
           value: 'targetLanguages',
         },
         {
-          text: 'Due data ',
+          text: 'Date due ',
           sortable: true,
-          value: 'dueDate',
+          value: 'dateDue',
+        },
+        {
+          text: 'Created ',
+          value: 'dateCreated',
         },
         {
           text: 'Actions',
@@ -135,15 +312,57 @@ export default {
           sortable: false,
         },
       ]
-    },
+    }
+    ,
   },
 
   methods: {
+    countStatus() {
+      // eslint-disable-next-line guard-for-in,no-restricted-syntax
+      const result = {}
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const projectsKey of this.projects) {
+        // eslint-disable-next-line no-prototype-builtins
+        if (result.hasOwnProperty(projectsKey.status)) {
+          // eslint-disable-next-line no-plusplus
+          result[projectsKey.status]++
+        } else {
+          result[projectsKey.status] = 1
+        }
+      }
+
+      return result
+    },
+    countSourceLanguage() {
+      // eslint-disable-next-line guard-for-in,no-restricted-syntax
+      const result = {}
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const projectsKey of this.projects) {
+        // eslint-disable-next-line no-prototype-builtins
+        if (result.hasOwnProperty(projectsKey.sourceLanguage)) {
+          // eslint-disable-next-line no-plusplus
+          result[projectsKey.sourceLanguage]++
+        } else {
+          result[projectsKey.sourceLanguage] = 1
+        }
+      }
+      const sortedKey = Object.keys(result)
+        .sort((a, b) => result[b] - result[a])
+
+      return `${sortedKey[0]}: ${result[sortedKey[0]]}`
+    },
     // eslint-disable-next-line no-unused-vars
     editItem(item) {
+      this.editedItem.name = item.name
+      this.editedItem.sourceLanguage = item.sourceLanguage
+      this.editedItem.targetLanguage = item.targetLanguage
+
       // this.editedIndex = this.desserts.indexOf(item)
       // this.editedItem = Object.assign({}, item)
-      // this.dialog = true
+      this.isEdit = true
+      this.dialog = true
     },
 
     // eslint-disable-next-line no-unused-vars
@@ -153,55 +372,46 @@ export default {
       // this.dialogDelete = true
     },
 
+    deleteItemConfirm() {
+      // this.desserts.splice(this.editedIndex, 1)
+      this.closeDelete()
+    },
+
+    close() {
+      this.dialog = false
+
+      // this.$nextTick(() => {
+      //   this.editedItem = { ...this.defaultItem }
+      //   this.editedIndex = -1
+      // })
+    },
+
+    closeDelete() {
+      this.dialogDelete = false
+
+      // this.$nextTick(() => {
+      //   this.editedItem = { ...this.defaultItem }
+      //   this.editedIndex = -1
+      // })
+    },
+
+    save() {
+      if (this.isEdit) {
+        // todo save with mutate and refresh list
+      } else {
+        // todo save with mutate and refresh
+      }
+      this.close()
+    }
+    ,
+
     // filterOnlyCapsText(value, search, item) {
     //   return value != null
     //       && search != null
     //       && typeof value === 'string'
     //       && value.toString().toLocaleUpperCase().indexOf(search) !== -1
     // },
-  },
-
-  // const desserts = [
-  //   {
-  //     dessert: 'Frozen Yogurt',
-  //     calories: 159,
-  //     fat: 6,
-  //     carbs: 24,
-  //     protein: 4,
-  //   },
-  //   {
-  //     dessert: 'Ice cream sandwich',
-  //     calories: 237,
-  //     fat: 6,
-  //     carbs: 24,
-  //     protein: 4,
-  //   },
-  //   {
-  //     dessert: 'Eclair',
-  //     calories: 262,
-  //     fat: 6,
-  //     carbs: 24,
-  //     protein: 4,
-  //   },
-  //   {
-  //     dessert: 'Cupcake',
-  //     calories: 305,
-  //     fat: 6,
-  //     carbs: 24,
-  //     protein: 4,
-  //   },
-  //   {
-  //     dessert: 'Gingerbread',
-  //     calories: 356,
-  //     fat: 6,
-  //     carbs: 24,
-  //     protein: 4,
-  //   },
-  // ]
-  //
-  // return {
-  //   desserts,
-  // }
-
+  }
+  ,
 }
 </script>

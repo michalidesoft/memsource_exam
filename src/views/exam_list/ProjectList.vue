@@ -1,6 +1,7 @@
 <template>
   <v-card>
     <v-data-table
+      :custom-filter="searchText"
       :custom-sort="customSort"
       :headers="headers"
       :items="projects"
@@ -21,133 +22,142 @@
         <span>{{ new Date(item.dateCreated).toLocaleString() }}</span>
       </template>
       <template v-slot:top>
-        <v-toolbar
-          flat
-        >
-          <v-toolbar-title>Projects list</v-toolbar-title>
-          <v-spacer></v-spacer>
-          <v-dialog
-            v-model="dialog"
-            max-width="500px"
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                class="mb-2"
-                color="primary"
-                dark
-                v-bind="attrs"
-                v-on="on"
+        <div class="d-flex ">
+          <v-row>
+            <v-col
+              cols="9"
+            >
+              <v-text-field
+                v-model="search"
+                class="ml-4"
+                label="Search - not working yet "
+                style="max-width: 300px"
+              ></v-text-field>
+              <v-spacer class="align-end"></v-spacer>
+            </v-col>
+            <v-col>
+              <v-toolbar
+                flat
               >
-                New project
-              </v-btn>
-            </template>
-            <v-card>
-              <v-card-title>
-                <span class="text-h5">{{ formTitle }}</span>
-              </v-card-title>
+                <v-dialog
+                  v-model="dialog"
+                  max-width="500px"
+                >
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn
+                      class="mb-2 float-right"
+                      color="primary"
+                      dark
+                      v-bind="attrs"
+                      v-on="on"
+                    >
+                      New project
+                    </v-btn>
+                  </template>
+                  <v-card>
+                    <v-card-title>
+                      <span class="text-h5">{{ formTitle }}</span>
+                    </v-card-title>
 
-              <v-card-text>
-                <v-container>
-                  <v-row>
-                    <v-col
-                      cols="12"
-                      md="12"
-                      sm="6"
-                    >
-                      <v-text-field
-                        v-model="editedItem.name"
-                        label="Project name"
-                      ></v-text-field>
-                    </v-col>
-                  </v-row>
-                  <v-row>
-                    <v-col
-                      cols="12"
-                      md="12"
-                      sm="6"
-                    >
-                      <v-select
-                        v-model="editedItem.source"
-                        :items="languages"
-                        label="Source language"
-                      ></v-select>
-                    </v-col>
-                  </v-row>
-                  <v-row>
-                    <v-col
-                      cols="12"
-                      md="12"
-                      sm="6"
-                    >
-                      <v-select
-                        v-model="editedItem.target"
-                        :items="languages"
-                        chips
-                        filled
-                        label="Target language"
-                        multiple
-                      ></v-select>
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
+                    <v-card-text>
+                      <v-container>
+                        <v-row>
+                          <v-col
+                            cols="12"
+                            md="12"
+                            sm="6"
+                          >
+                            <v-text-field
+                              v-model="editedItem.name"
+                              label="Project name"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col
+                            cols="12"
+                            md="12"
+                            sm="6"
+                          >
+                            <v-select
+                              v-model="editedItem.source"
+                              :items="languages"
+                              label="Source language"
+                            ></v-select>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col
+                            cols="12"
+                            md="12"
+                            sm="6"
+                          >
+                            <v-select
+                              v-model="editedItem.target"
+                              :items="languages"
+                              chips
+                              filled
+                              label="Target language"
+                              multiple
+                            ></v-select>
+                          </v-col>
+                        </v-row>
+                      </v-container>
+                    </v-card-text>
 
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn
-                  color="blue darken-1"
-                  text
-                  @click="close"
+                    <v-card-actions>
+                      <v-spacer></v-spacer>
+                      <v-btn
+                        color="blue darken-1"
+                        text
+                        @click="close"
+                      >
+                        Cancel
+                      </v-btn>
+                      <v-btn
+                        color="blue darken-1"
+                        text
+                        @click="save"
+                      >
+                        Save
+                      </v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-dialog>
+                <v-dialog
+                  v-model="dialogDelete"
+                  max-width="500px"
                 >
-                  Cancel
-                </v-btn>
-                <v-btn
-                  color="blue darken-1"
-                  text
-                  @click="save"
-                >
-                  Save
-                </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-          <v-dialog
-            v-model="dialogDelete"
-            max-width="500px"
-          >
-            <v-card>
-              <v-card-title class="text-h5">
-                Are you sure you want to delete this item?
-              </v-card-title>
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn
-                  color="blue darken-1"
-                  text
-                  @click="closeDelete"
-                >
-                  Cancel
-                </v-btn>
-                <v-btn
-                  color="blue darken-1"
-                  text
-                  @click="deleteItemConfirm"
-                >
-                  OK
-                </v-btn>
-                <v-spacer></v-spacer>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-        </v-toolbar>
+                  <v-card>
+                    <v-card-title class="text-h5">
+                      Are you sure you want to delete this item?
+                    </v-card-title>
+                    <v-card-actions>
+                      <v-spacer></v-spacer>
+                      <v-btn
+                        color="blue darken-1"
+                        text
+                        @click="closeDelete"
+                      >
+                        Cancel
+                      </v-btn>
+                      <v-btn
+                        color="blue darken-1"
+                        text
+                        @click="deleteItemConfirm"
+                      >
+                        OK
+                      </v-btn>
+                      <v-spacer></v-spacer>
+                    </v-card-actions>
+                  </v-card>
+                </v-dialog>
+              </v-toolbar>
+            </v-col>
+          </v-row>
+        </div>
       </template>
-      <!--    <template v-slot:top>-->
-      <!--      <v-text-field-->
-      <!--        v-model="search"-->
-      <!--        label="Search (UPPER CASE ONLY)"-->
-      <!--        class="mx-4"-->
-      <!--      ></v-text-field>-->
-      <!--    </template>-->
+
       <template v-slot:item.actions="{ item }">
         <v-icon
           class="mr-2"
@@ -269,7 +279,7 @@ export default {
       isError,
       projects,
       error,
-
+      search: '',
       icons: {
         mdiDelete,
         mdiPencil,
@@ -437,15 +447,17 @@ export default {
         // todo save with mutate and refresh
       }
       this.close()
-    }
-    ,
+    },
+    // eslint-disable-next-line no-unused-vars
+    searchText(value, search, item) {
+      console.log(item, value)
 
-    // filterOnlyCapsText(value, search, item) {
-    //   return value != null
-    //       && search != null
-    //       && typeof value === 'string'
-    //       && value.toString().toLocaleUpperCase().indexOf(search) !== -1
-    // },
+      return value != null
+        && search != null
+        && typeof value === 'string'
+        && value.toString()
+          .indexOf(search) !== -1
+    },
   }
   ,
 }

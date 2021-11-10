@@ -1,10 +1,10 @@
 <template>
   <v-card>
     <v-data-table
+      :custom-sort="customSort"
       :headers="headers"
       :items="projects"
       :loading="isLoading"
-      :sort-by="['id', 'name','status','dueDate']"
       class="elevation-1"
       dense
       height="400"
@@ -14,6 +14,12 @@
       multi-sort
       no-data-text="No data"
     >
+      <template v-slot:item.dateDue="{ item }">
+        <span>{{ new Date(item.dateDue).toLocaleString() }}</span>
+      </template>
+      <template v-slot:item.dateCreated="{ item }">
+        <span>{{ new Date(item.dateCreated).toLocaleString() }}</span>
+      </template>
       <template v-slot:top>
         <v-toolbar
           flat
@@ -171,7 +177,9 @@
               <v-list
                 dense
               >
-                <v-subheader>Status</v-subheader>
+                <div class="ml-5">
+                  Status
+                </div>
                 <v-list-item
                   v-for="(item, i) in Object.entries(countStatus())"
                   :key="i"
@@ -185,6 +193,8 @@
               md="4"
               sm="6"
             >
+              Most prominent language
+              <br />
               {{ countSourceLanguage() }}
             </v-col>
             <v-col
@@ -192,7 +202,9 @@
               md="4"
               sm="6"
             >
-              aa
+              Date due
+              <br />
+              {{ countDue() }}
             </v-col>
           </v-row>
         </div>
@@ -353,6 +365,29 @@ export default {
 
       return `${sortedKey[0]}: ${result[sortedKey[0]]}`
     },
+    countDue() {
+      return this.projects.filter(project => new Date(project.dateDue).getTime() <= Date.now()).length
+    },
+
+    customSort(items, index, isDesc) {
+      items.sort((a, b) => {
+        if (index === 'date') {
+          if (!isDesc) {
+            return new Date(a.date) - new Date(b.date)
+          }
+
+          return new Date(b.date) - new Date(a.date)
+        }
+        if (!isDesc) {
+          return a[index] < b[index] ? -1 : 1
+        }
+
+        return b[index] < a[index] ? -1 : 1
+      })
+
+      return items
+    },
+
     // eslint-disable-next-line no-unused-vars
     editItem(item) {
       this.editedItem.name = item.name
